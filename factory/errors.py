@@ -27,3 +27,7 @@ class InvalidDeclarationError(FactoryError):
     This means that the user declared 'foo__bar' without adding a declaration
     at 'foo'.
     """
+
+
+class RandomBranchError(FactoryError):
+    """Raised on invalid uses of a :func:`factory.random.random_branch`."""

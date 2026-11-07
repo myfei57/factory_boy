@@ -14,12 +14,12 @@ Usage:
 
 
 import contextlib
-from typing import Dict
+from typing import Dict, List
 
 import faker
 import faker.config
 
-from . import declarations
+from . import declarations, random
 
 
 class Faker(declarations.BaseDeclaration):
@@ -49,6 +49,9 @@ class Faker(declarations.BaseDeclaration):
         return subfaker.format(self.provider, **extra)
 
     _FAKER_REGISTRY: Dict[str, faker.Faker] = {}
+    # Provider classes explicitly registered through add_provider(), keyed by
+    # locale; replayed when building a random-branch-local faker instance.
+    _CUSTOM_PROVIDERS: Dict[str, List[object]] = {}
     _DEFAULT_LOCALE = faker.config.DEFAULT_LOCALE
 
     @classmethod
@@ -66,6 +69,20 @@ class Faker(declarations.BaseDeclaration):
         if locale is None:
             locale = cls._DEFAULT_LOCALE
 
+        branch = random.get_active_branch()
+        if branch is not None:
+            # Each branch gets its own faker instances, bound to the
+            # branch-local random generator: the global faker generator is
+            # never advanced from within a branch.
+            def _create_branch_faker():
+                subfaker = faker.Faker(locale=locale)
+                subfaker.random = branch.faker_random
+                for custom_provider in cls._CUSTOM_PROVIDERS.get(locale, []):
+                    subfaker.add_provider(custom_provider)
+                return subfaker
+
+            return branch.get_faker(locale, _create_branch_faker)
+
         if locale not in cls._FAKER_REGISTRY:
             subfaker = faker.Faker(locale=locale)
             cls._FAKER_REGISTRY[locale] = subfaker
@@ -75,4 +92,8 @@ class Faker(declarations.BaseDeclaration):
     @classmethod
     def add_provider(cls, provider, locale=None):
         """Add a new Faker provider for the specified locale"""
-        cls._get_faker(locale).add_provider(provider)
+        if locale is None:
+            locale = cls._DEFAULT_LOCALE
+        subfaker = cls._get_faker(locale)
+        cls._CUSTOM_PROVIDERS.setdefault(locale, []).append(provider)
+        subfaker.add_provider(provider)

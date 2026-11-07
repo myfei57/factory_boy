@@ -72,7 +72,8 @@ class FuzzyText(BaseFuzzyAttribute):
         self.chars = tuple(chars)  # Unroll iterators
 
     def fuzz(self):
-        chars = [random.randgen.choice(self.chars) for _i in range(self.length)]
+        randgen = random.get_active_random()
+        chars = [randgen.choice(self.chars) for _i in range(self.length)]
         return self.prefix + ''.join(chars) + self.suffix
 
 
@@ -94,7 +95,7 @@ class FuzzyChoice(BaseFuzzyAttribute):
     def fuzz(self):
         if self.choices is None:
             self.choices = list(self.choices_generator)
-        value = random.randgen.choice(self.choices)
+        value = random.get_active_random().choice(self.choices)
         if self.getter is None:
             return value
         return self.getter(value)
@@ -115,7 +116,7 @@ class FuzzyInteger(BaseFuzzyAttribute):
         super().__init__()
 
     def fuzz(self):
-        return random.randgen.randrange(self.low, self.high + 1, self.step)
+        return random.get_active_random().randrange(self.low, self.high + 1, self.step)
 
 
 class FuzzyDecimal(BaseFuzzyAttribute):
@@ -133,7 +134,7 @@ class FuzzyDecimal(BaseFuzzyAttribute):
         super().__init__()
 
     def fuzz(self):
-        base = decimal.Decimal(str(random.randgen.uniform(self.low, self.high)))
+        base = decimal.Decimal(str(random.get_active_random().uniform(self.low, self.high)))
         return base.quantize(decimal.Decimal(10) ** -self.precision)
 
 
@@ -152,7 +153,7 @@ class FuzzyFloat(BaseFuzzyAttribute):
         super().__init__()
 
     def fuzz(self):
-        base = random.randgen.uniform(self.low, self.high)
+        base = random.get_active_random().uniform(self.low, self.high)
         return float(format(base, '.%dg' % self.precision))
 
 
@@ -162,7 +163,7 @@ class FuzzyDate(BaseFuzzyAttribute):
     def __init__(self, start_date, end_date=None):
         super().__init__()
         if end_date is None:
-            if random.randgen.state_set:
+            if getattr(random.get_active_random(), 'state_set', False):
                 cls_name = self.__class__.__name__
                 warnings.warn(random_seed_warning.format(cls_name), stacklevel=2)
             end_date = datetime.date.today()
@@ -176,7 +177,8 @@ class FuzzyDate(BaseFuzzyAttribute):
         self.end_date = end_date.toordinal()
 
     def fuzz(self):
-        return datetime.date.fromordinal(random.randgen.randint(self.start_date, self.end_date))
+        return datetime.date.fromordinal(
+            random.get_active_random().randint(self.start_date, self.end_date))
 
 
 class BaseFuzzyDateTime(BaseFuzzyAttribute):
@@ -201,7 +203,7 @@ class BaseFuzzyDateTime(BaseFuzzyAttribute):
         super().__init__()
 
         if end_dt is None:
-            if random.randgen.state_set:
+            if getattr(random.get_active_random(), 'state_set', False):
                 cls_name = self.__class__.__name__
                 warnings.warn(random_seed_warning.format(cls_name), stacklevel=2)
             end_dt = self._now()
@@ -222,7 +224,7 @@ class BaseFuzzyDateTime(BaseFuzzyAttribute):
         delta = self.end_dt - self.start_dt
         microseconds = delta.microseconds + 1000000 * (delta.seconds + (delta.days * 86400))
 
-        offset = random.randgen.randint(0, microseconds)
+        offset = random.get_active_random().randint(0, microseconds)
         result = self.start_dt + datetime.timedelta(microseconds=offset)
 
         if self.force_year is not None:

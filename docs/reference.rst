@@ -2156,4 +2156,45 @@ of :class:`random.Random`, which can be managed through the :mod:`factory.random
     The :class:`random.Random` global instance used by :mod:`factory.fuzzy`
     and :class:`factory.Faker`.
 
+.. method:: random_branch(name=None)
+
+    Fork the current random state into a named, branch-local context::
+
+        with factory.random.random_branch('fixtures') as branch:
+            name = factory.Faker('name')  # draws from the branch state
+            score = factory.fuzzy.FuzzyInteger(0, 100).fuzz()
+            branch.commit()  # or branch.discard()
+
+    Inside the ``with`` block, :class:`factory.Faker` and
+    :mod:`factory.fuzzy` draw from private copies of the parent random
+    generators: the results are reproducible (re-entering a branch forked
+    from the same state yields the same values) and the parent state is not
+    advanced. Branches can be nested, each one forking its enclosing branch.
+
+    The end of the block applies one of two decisions:
+
+    * :meth:`~factory.random.RandomBranch.commit` merges the branch end
+      state into its parent, as if the draws had happened on the parent;
+    * :meth:`~factory.random.RandomBranch.discard` (also the default when no
+      decision is made) leaves the parent state untouched. An exception
+      propagating through the block always discards the branch, even after
+      ``commit()`` was called.
+
+    Branch stacks are thread-local: a branch is only visible to the thread
+    that opened it, the same name may be used concurrently in different
+    threads, and the global generators are never modified while a branch is
+    active. Opening a branch with a name already active in the same thread
+    raises a :class:`factory.errors.RandomBranchError`.
+
+.. method:: get_active_branch()
+
+    Return the :class:`factory.random.RandomBranch` currently active in this
+    thread, or ``None`` when outside of a :meth:`random_branch` block.
+
+.. method:: get_active_random()
+
+    Return the :class:`random.Random` currently backing
+    :mod:`factory.fuzzy`: the active branch's generator when inside a branch,
+    or :data:`randgen` otherwise.
+
 See :ref:`recipe-random-management` for help in using those methods in a test setup.
