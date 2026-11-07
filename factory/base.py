@@ -539,6 +539,23 @@ class BaseFactory(Generic[T]):
         return cls._generate(enums.CREATE_STRATEGY, kwargs)
 
     @classmethod
+    def plan_create(cls, **kwargs):
+        """Preview ``create(**kwargs)`` without touching the database.
+
+        Returns a :class:`factory.plan.PersistencePlan` describing, in order,
+        model instantiation, related-object creation, saves and
+        post-generation hooks, together with the relevant transaction
+        boundaries.  No instance is persisted while building the plan.
+
+        Call ``.commit()`` on the returned plan to perform the create; if a
+        step fails, per-step statuses report what was completed and calling
+        ``.commit()`` again resumes idempotently (completed steps are not
+        re-run).
+        """
+        from .plan import plan_persistence
+        return plan_persistence(cls, kwargs)
+
+    @classmethod
     def create_batch(cls, size: int, **kwargs) -> List[T]:
         """Create a batch of instances of the given class, with overridden attrs.
 

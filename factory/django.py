@@ -342,10 +342,13 @@ class mute_signals:
             return wrapper
 
     def wrap_method(self, method):
-        @classmethod
         @functools.wraps(method)
         def wrapped_method(*args, **kwargs):
             # A mute_signals() object is not reentrant; use a copy every time.
             with self.copy():
                 return method(*args, **kwargs)
-        return wrapped_method
+        # Marker used by factory.plan to describe and reproduce the muted
+        # scope when executing a persistence plan.  It must be set on the
+        # plain function, before it is wrapped into a classmethod.
+        wrapped_method._factoryboy_muted_signals = self.signals
+        return classmethod(wrapped_method)

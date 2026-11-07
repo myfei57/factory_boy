@@ -53,6 +53,14 @@ from .helpers import (
     stub,
     stub_batch,
 )
+from .plan import (
+    PartialCommitError,
+    PersistencePlan,
+    PlannedStep,
+    StepKind,
+    StepStatus,
+    TransactionBoundary,
+)
 
 try:
     from . import alchemy
