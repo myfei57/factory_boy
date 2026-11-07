@@ -574,6 +574,25 @@ class BaseFactory(Generic[T]):
         return [cls.stub(**kwargs) for _ in range(size)]
 
     @classmethod
+    def explain_overrides(cls, **kwargs):
+        """Describe declaration override conflicts without generating anything.
+
+        This statically replays factory_boy's override precedence
+        (inheritance, class declarations, Params/Traits, call-time kwargs and
+        nested SubFactory contexts) and returns, for each field, the winning
+        source, the overridden chain, the categories of abandoned values and
+        detectable cyclic risks.
+
+        No declaration is evaluated and no model or factory is executed;
+        concrete values are never included in the report.
+
+        Returns:
+            factory.explain.OverrideReport
+        """
+        from .explain import explain_overrides
+        return explain_overrides(cls, **kwargs)
+
+    @classmethod
     def generate(cls, strategy, **kwargs):
         """Generate a new instance.
 
