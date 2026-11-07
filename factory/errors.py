@@ -27,3 +27,7 @@ class InvalidDeclarationError(FactoryError):
     This means that the user declared 'foo__bar' without adding a declaration
     at 'foo'.
     """
+
+
+class TransactionError(FactoryError):
+    """Raised on an invalid sequence transaction state transition."""

@@ -4,7 +4,7 @@ import faker.generator
 
 randgen = random.Random()
 
-randgen.state_set = False
+randgen.state_set = False  # type: ignore[attr-defined]
 
 
 def get_random_state():

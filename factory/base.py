@@ -398,6 +398,10 @@ class _Counter:
 
     def __init__(self, seq):
         self.seq = seq
+        # Register the counter so that sequence transactions can snapshot it;
+        # this has no effect on normal next()/reset() behaviour.
+        from . import transactions
+        transactions._register_counter(self, seq)
 
     def next(self):
         value = self.seq
