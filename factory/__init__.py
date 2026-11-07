@@ -31,7 +31,7 @@ from .declarations import (
     Transformer,
 )
 from .enums import BUILD_STRATEGY, CREATE_STRATEGY, STUB_STRATEGY
-from .errors import FactoryError
+from .errors import FactoryError, PostGenerationError
 from .faker import Faker
 from .helpers import (
     build,
@@ -52,6 +52,13 @@ from .helpers import (
     simple_generate_batch,
     stub,
     stub_batch,
+)
+from .postgeneration import (
+    PostGenerationAggregator,
+    PostGenerationReport,
+    PostGenerationResult,
+    PostGenerationStatus,
+    collect_postgeneration_reports,
 )
 
 try:

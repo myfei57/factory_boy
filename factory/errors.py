@@ -27,3 +27,23 @@ class InvalidDeclarationError(FactoryError):
     This means that the user declared 'foo__bar' without adding a declaration
     at 'foo'.
     """
+
+
+class PostGenerationError(FactoryError):
+    """Raised when a post-generation declaration failed.
+
+    Attributes:
+        report: the immutable PostGenerationReport recorded up to (and
+            including) the failed declaration; declarations that ran before
+            the failure keep their executed/skipped boundaries.
+        declaration (str): name of the declaration whose execution failed.
+    """
+
+    def __init__(self, report, declaration, exception):
+        self.report = report
+        self.declaration = declaration
+        self.exception = exception
+        super().__init__(
+            "Error while executing post-generation declaration %r: %r"
+            % (declaration, exception)
+        )

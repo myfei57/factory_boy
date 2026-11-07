@@ -2,7 +2,7 @@
 
 import collections
 
-from . import enums, errors, utils
+from . import enums, errors, postgeneration, utils
 
 DeclarationWithContext = collections.namedtuple(
     'DeclarationWithContext',
@@ -277,18 +277,44 @@ class StepBuilder:
             kwargs=kwargs,
         )
 
-        postgen_results = {}
-        for declaration_name in post.sorted():
-            declaration = post[declaration_name]
-            postgen_results[declaration_name] = declaration.declaration.evaluate_post(
-                instance=instance,
-                step=step,
-                overrides=declaration.context,
+        postgen_collector = postgeneration.get_current_collector()
+        if postgen_collector is not None:
+            on_error = postgen_collector.on_error
+        else:
+            # Historical behaviour: a failure propagates immediately.
+            on_error = postgeneration.PostGenerationAggregator.STOP
+
+        outcome = postgeneration.evaluate_post_declarations(
+            post,
+            instance,
+            step,
+            on_error=on_error,
+        )
+
+        # Record the report (including partial, failure-bounded reports)
+        # before any exception is propagated; the build()/create() return
+        # value is left unchanged.
+        if postgen_collector is not None:
+            postgen_collector._record_build(
+                self.factory_meta,
+                step,
+                instance,
+                outcome.report,
             )
+
+        if outcome.report.failed:
+            if on_error == postgeneration.PostGenerationAggregator.STOP:
+                # Declarations past the failure never ran; preserve the
+                # historical exception propagation (original exception, no
+                # _after_postgeneration call).
+                raise outcome.report.failed[0].exception
+            # CONTINUE policy: hand the available results to the postgeneration
+            # hook as usual and return the generated instance.
+
         self.factory_meta.use_postgeneration_results(
             instance=instance,
             step=step,
-            results=postgen_results,
+            results=outcome.results,
         )
         return instance
 
